@@ -1,20 +1,22 @@
-ESM267_ASSIGNMENT1_Callie_Steffen    
-# this lets you see the commands as they are executed
+#ESM267_ASSIGNMENT1_Callie_Steffen    
+# set -x lets you see the commands as they are executed
  
 set -x
 
-    # a list of the rasters that we want to clip and project
-    
-rasters="crefl2_A2019257204722-2019257205812_250m_ca-south-000_143"
 
-ogrinfo-al -so tl_2018_us_county/tl_2018_us_county.shp
-    # the shapefile that the rasters will be clipped to- We want santa barbara county. Projection/Attributes
 	
-	ogr2ogr -t_srs EPSG:3310\ -where "name='Santa Barbara'" aoi.shp tl_2018_us_county/tl_2018_us_county.shp 
-#this is theoretically projecting the vector to the NAD83/California Albers projection and taking the outline of SB county
+ogr2ogr -t_srs EPSG:3310 county_projection.shp tl_2018_us_county/tl_2018_us_county.shp
+#reproject the county shapefile into 3310 and named it country_projection
 
-  
-roi=aoi.shp
+ogr2ogr -where "name='Santa Barbara'" sb_projection.shp county_projection.shp
+#filter santa barbara county from the new projected country file named county_projection and name the new file sb_projection.shp
+
+# a list of the rasters that we want to clip and project
+    
+rasters="crefl2_A2019257204722-2019257205812_250m_ca-south-000_143.tif"
+
+#region of interest is the shapfile of SB county projected in 3310
+roi=sb_projection.shp
 
 common_args="-dstalpha -of GTiff -co COMPRESS=DEFLATE -overwrite"
 
@@ -25,7 +27,7 @@ common_args="-dstalpha -of GTiff -co COMPRESS=DEFLATE -overwrite"
 clip_args="-cutline $roi -crop_to_cutline"
 
     # arguments for the project command
-    # -t_srs EPSG:3310 for NAD83 California Teal Albers : use UTM zone 10N for the output coordinate system
+    # -t_srs EPSG:3310 for NAD83 California Teal Albers 
     #
 project_args="-t_srs EPSG:3310"
 
@@ -33,11 +35,10 @@ project_args="-t_srs EPSG:3310"
     #
 for file in $rasters
 do
-        # clip ESRI grid InVEST_CV/$file into GeoTIFF ${file}_clipped.tif
-        #
-    gdalwarp $common_args $clip_args $file tl_2018_us_county/${file}_clipped.tif
+      
+    
+    gdalwarp $common_args $clip_args $file ${file}_clipped.tif
 
-        # project GeoTIFF ${file}_clipped.tif into GeoTIFF ${file}_utm10n.tif
-        #
-    gdalwarp $common_args $project_args ${file}_clipped.tif ${file}_utm10n.tif
-done 
+    gdalwarp $common_args $project_args ${file}_clipped.tif ${file}_albers.tif
+done
+ 
